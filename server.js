@@ -1,6 +1,7 @@
 // Bring in the modules
 var mysql = require("mysql");
 const inquirer = require('inquirer');
+const cTable = require('console.table');
 
 
 var connection = mysql.createConnection({
@@ -206,22 +207,66 @@ function updateDB(action, table) {
     // uncomment the below to confirm args come into function, if needed
     // console.log('test');
 
-    // Create query
-    // connection.query("FROM auctions", function(err, res) {
-    //     if (err) throw err;
-    //     console.log(res);
 
+    connection.query(`select * from ${table}`, function(err,res){
+        if (err) throw err;
+        // console.log(Object.keys(res[0]));
+        // console.log(res);
+        tableSchema = Object.keys(res[0]);
+    })
+
+    
+
+    const updateQs = 
+        {
+            type: 'checkbox',
+            message: "Select the fields you'd like to update",
+            name: "fields",
+            choices: tableSchema
+        }
+    
+
+    // console.log(updateQs);
+
+    // inquirer.prompt(updateQs).then(schema => {
+    //     console.log(schema);
+    //     // Create query
+    //     // connection.query(`insert into ${table} set ?`, 
+    //     // [schema],
+        
+    //     // function(err, res) {
+    //     //     if (err) throw err;
+    //     //     console.log(res);
+
+    //     // })
+
+    // })
 }
 
 // Query the database based on the user's input
 function viewDB(action, table) {
     // uncomment the below to confirm args come into function, if needed
     // console.log('test');
+    const viewQs = {
+        type: 'confirm',
+        message: 'Would you like to enter any search filters?',
+        name: 'filters'
+    }
 
-    // Create query
-    // connection.query("FROM auctions", function(err, res) {
-    //     if (err) throw err;
-    //     console.log(res);
+    // inquirer.prompt(viewQs).then(answers => {
+    //     // console.log(answers.filters);
+    //     if (answers.filters) {
+    //         inquirer.prompt
+    //     }
+    //     else {
+    //         connection.query(`SELECT * from ${table}`, function(err, res) {
+    //             if (err) throw err;
+    //             console.log('\n');
+    //             console.table(res);
+        
+    //         })
+    //     }
+    // })
 
 }
 

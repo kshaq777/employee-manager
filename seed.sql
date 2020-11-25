@@ -26,3 +26,10 @@ create table employees (
    primary key (id)
 
 );
+
+insert into department (name)
+values ('Marketing');
+
+insert into roles (title, salary, department_id) 
+values ('Marketing Manager', 80000, 
+(select id from department where name = 'Marketing'));
