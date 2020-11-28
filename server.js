@@ -42,6 +42,14 @@ const questions = [
     
 ]
 
+// Make the schemas global variables for the various functions
+var deptSchema = [];
+var roleSchema = [];
+var empSchema = [];
+
+getSchemas();
+
+
 // get init input so as to guide which function to execute
 function askFork() {
     inquirer.prompt(questions).then(answer => {
@@ -67,6 +75,30 @@ function askFork() {
         }
 
     })
+}
+
+
+// function to fill global vars
+function getSchemas() {
+
+connection.query("select * from department", function(err,res){
+    if (err) throw err;
+    deptSchema = Object.keys(res[0]);
+
+})
+
+connection.query("select * from roles", function(err,res){
+    if (err) throw err;
+    roleSchema = Object.keys(res[0]);
+
+})
+
+connection.query("select * from employees", function(err,res){
+    if (err) throw err;
+    empSchema = Object.keys(res[0]);
+
+})
+
 }
 
 // Query the database based on the user's input
@@ -205,68 +237,158 @@ function createDB(action, table) {
 // Query the database based on the user's input
 function updateDB(action, table) {
     // uncomment the below to confirm args come into function, if needed
-    // console.log('test');
+    // console.log(empSchema);
+    var tableSchema;
 
 
-    connection.query(`select * from ${table}`, function(err,res){
-        if (err) throw err;
-        // console.log(Object.keys(res[0]));
-        // console.log(res);
-        tableSchema = Object.keys(res[0]);
-    })
+    async function getTable() {
+        connection.query(`select * from ${table}`, function(err, res) {
+        // if (err) throw err;
+            console.table(res);
 
-    
+        })
+
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve('resolved'),
+                2000
+            });
+        })
+    }
+
+    // Get the right table
+    switch (table){
+        case ("department"):
+            
+            console.log('\n');
+            // connection.query('select * from department', function(err, res) {
+            //     if (err) throw err;
+            //     console.table(res);
+            // })
+            tableSchema = deptSchema;
+            break;
+        
+        case ("roles"):
+            
+            console.log('\n');
+            // connection.query('select * from roles', function(err, res) {
+            //     if (err) throw err;
+            //     console.table(res);
+            // })
+            tableSchema = roleSchema;
+            break;
+
+        case ("employees"):
+            
+            console.log('\n');
+            // connection.query('select * from employees', function(err, res) {
+            //     if (err) throw err;
+            //     console.table(res);
+            // })
+            tableSchema = empSchema;
+            break;
+
+    }
 
     const updateQs = 
+        [{
+            type: 'input',
+            message: 'Enter the ID of the record you want to update.',
+            name: 'id'
+        },
         {
-            type: 'checkbox',
-            message: "Select the fields you'd like to update",
+            type: 'list',
+            message: "Select the field you'd like to update",
             name: "fields",
             choices: tableSchema
-        }
+        },
+        {
+            type: 'input',
+            message: 'What value should the field get?',
+            name: 'value'
+
+        }]
+
+    getTable().then(
+        inquirer.prompt(updateQs).then(schema => {
+        // console.log(schema);
+        // Create query
+        connection.query(`update ${table} set ${schema.fields} = '${schema.value}' where id = '${schema.id}'`, 
     
+        function(err, res) {
+            if (err) throw err;
+            console.log(res);
 
-    // console.log(updateQs);
+        })
 
-    // inquirer.prompt(updateQs).then(schema => {
-    //     console.log(schema);
-    //     // Create query
-    //     // connection.query(`insert into ${table} set ?`, 
-    //     // [schema],
-        
-    //     // function(err, res) {
-    //     //     if (err) throw err;
-    //     //     console.log(res);
+    })
+    )
 
-    //     // })
-
-    // })
 }
 
 // Query the database based on the user's input
 function viewDB(action, table) {
     // uncomment the below to confirm args come into function, if needed
     // console.log('test');
+    var tableSchema;
+
+    // Get the right table
+    switch (table){
+        case ("department"):
+            tableSchema = deptSchema;
+            break;
+        
+        case ("roles"):
+            tableSchema = roleSchema
+            break;
+
+        case ("employees"):
+            tableSchema = empSchema;
+            break;
+
+    }
+    
     const viewQs = {
         type: 'confirm',
         message: 'Would you like to enter any search filters?',
         name: 'filters'
     }
 
-    // inquirer.prompt(viewQs).then(answers => {
-    //     // console.log(answers.filters);
-    //     if (answers.filters) {
-    //         inquirer.prompt
-    //     }
-    //     else {
-    //         connection.query(`SELECT * from ${table}`, function(err, res) {
-    //             if (err) throw err;
-    //             console.log('\n');
-    //             console.table(res);
+    const whereQs = 
+        [{
+            type: 'list',
+            message: "Select the field you'd like to filter by.",
+            name: "fields",
+            choices: tableSchema
+        },
+        {
+            type: 'input',
+            message: 'What value should the filter get?',
+            name: 'value'
+
+        }]
+
+    inquirer.prompt(viewQs).then(answers => {
+        // console.log(answers.filters);
+        if (answers.filters) {
+            inquirer.prompt(whereQs).then( a => {
+                connection.query(`SELECT * from ${table} where ${a.fields} = '${a.value}'`, function(err, res){
+                if (err) throw err;
+                console.log('\n');
+                console.table(res);
+                })
+            })
+        }
+
+        else {
+            connection.query(`SELECT * from ${table}`, function(err, res) {
+                if (err) throw err;
+                console.log('\n');
+                console.table(res);
         
-    //         })
-    //     }
-    // })
+            })
+        }
+    })
 
 }
 
