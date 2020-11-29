@@ -61,6 +61,12 @@ const questions3 = [
     }
 ]
 
+const reset = {
+    type: 'confirm',
+    message: "Press 'Y' to do your next query",
+    name: 'reset'
+}
+
 // Make the schemas global variables for the various functions
 var deptSchema = [];
 var roleSchema = [];
@@ -180,7 +186,7 @@ function createDB(action, table) {
     const createQs = [];
     const dept = [];
     const role = [];
-    const mgr = [];
+    const mgr = ['null'];
     var dq;
     var rq;
     var mq;
@@ -305,8 +311,13 @@ function createDB(action, table) {
             let match = rq.find(obj => obj.title === schema.role_id);
             schema.role_id = match.id;
 
+            if (schema.manager_id != 'null') {
             let match2 = mq.find(obj => obj.firstname.concat(' ').concat(obj.lastname) === schema.manager_id);
             schema.manager_id = match2.id;
+            }
+            else {
+                schema.manager_id = null;
+            }
         }
     
     
@@ -317,6 +328,14 @@ function createDB(action, table) {
         function(err, res) {
             if (err) throw err;
             console.log(res);
+            inquirer.prompt(reset).then(r => {
+                if (r.reset) {
+                    askFork();
+                }
+                else {
+                    connection.end();
+                }
+            })
 
         })
 
@@ -397,6 +416,14 @@ function updateDB(action, table) {
         function(err, res) {
             if (err) throw err;
             console.log(res);
+            inquirer.prompt(reset).then(r => {
+                if (r.reset) {
+                    askFork();
+                }
+                else {
+                    connection.end();
+                }
+            })
 
         })
 
@@ -455,6 +482,14 @@ function viewDB(action, table) {
                 if (err) throw err;
                 console.log('\n');
                 console.table(res);
+                inquirer.prompt(reset).then(r => {
+                    if (r.reset) {
+                        askFork();
+                    }
+                    else {
+                        connection.end();
+                    }
+                })
                 })
             })
         }
@@ -464,6 +499,14 @@ function viewDB(action, table) {
                 if (err) throw err;
                 console.log('\n');
                 console.table(res);
+                inquirer.prompt(reset).then(r => {
+                    if (r.reset) {
+                        askFork();
+                    }
+                    else {
+                        connection.end();
+                    }
+                })
         
             })
         }
@@ -506,6 +549,14 @@ function deleteDB(action, table) {
         function(err, res) {
             if (err) throw err;
             console.log(res);
+            inquirer.prompt(reset).then(r => {
+                if (r.reset) {
+                    askFork();
+                }
+                else {
+                    connection.end();
+                }
+            })
 
         })
 
@@ -530,20 +581,37 @@ function groupByMgr() {
 
     inquirer.prompt(manager).then(m => {
 
-        if(m.length > 0) {
+        connection.query(`select * from employees where id = ${m.id}`, function(err,res){
+            console.log(`\nViewing Employees Under ${res[0].firstname} ${res[0].lastname}`);
+        })
 
-            connection.query(`select * from employees where id = ${m.id}`, function(err,res){
-                console.log(`\nViewing Employees Under ${res[0].firstname} ${res[0].lastname}`);
-            })
-
-            connection.query(`select * from employees where manager_id = '${m.id}'`, function(err,res){
+        connection.query(`select * from employees where manager_id = '${m.id}'`, function(err,res){
+            if (res.length > 0) {
                 console.table(res);
-            })
-            askFork();
-        }
-        else {
-            console.log('This Manager currently has no employees under them.')
-        }
+                inquirer.prompt(reset).then(r => {
+                    if (r.reset) {
+                        askFork();
+                    }
+                    else {
+                        connection.end();
+                    }
+                })
+            }
+            else {
+                console.log('This Manager currently has no employees under them.')
+                inquirer.prompt(reset).then(r => {
+                    if (r.reset) {
+                        askFork();
+                    }
+                    else {
+                        connection.end();
+                    }
+                })
+            }
+            
+        })
+
+    
     })
 }
 
@@ -574,5 +642,13 @@ function deptBudget() {
         if (err) throw err;
         console.log('\n');
         console.table(res);
+        inquirer.prompt(reset).then(r => {
+            if (r.reset) {
+                askFork();
+            }
+            else {
+                connection.end();
+            }
+        })
     })
 }
