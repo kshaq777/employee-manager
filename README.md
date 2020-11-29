@@ -1,5 +1,5 @@
 # employee-manager
-![](./assets/images/ems_screenshot.PNG)
+![](./assets/ems_screenshot.PNG)
 
 ## Description
     Dynamically execute SQL queries and actions using a command-line database management system.
