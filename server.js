@@ -23,7 +23,15 @@ connection.connect(function(err) {
 });
 
 // init array of questions to ask
-const questions = [
+const questions1 = [
+    {
+        type: 'list',
+        message: "Would you like to use dynamic mode, or use pre-built functions?",
+        name: 'dynamic',
+        choices: ['dynamic', 'pre-built']
+    }
+]
+const questions2 = [
     // the question to decide the path
     {
         type: 'list',
@@ -42,17 +50,79 @@ const questions = [
     
 ]
 
+const questions3 = [
+    {
+        type: 'list',
+        message: 'Which query would you like to execute?',
+        name: 'query',
+        choices: ['View Employees by Manager', 
+        // 'View Employees by Dept', 
+        'View Dept Budgets']
+    }
+]
+
 // Make the schemas global variables for the various functions
 var deptSchema = [];
 var roleSchema = [];
 var empSchema = [];
+
+// Make the total values avaialable like a 'cache'
+var empVals = [];
+var roleVals = [];
+var deptVals = [];
+var mgrVals = [];
 
 getSchemas();
 
 
 // get init input so as to guide which function to execute
 function askFork() {
-    inquirer.prompt(questions).then(answer => {
+    inquirer.prompt(questions1).then(a => {
+        if (a.dynamic === 'dynamic') {
+            dynamicFork();
+        }
+        else {
+            staticFork();
+        }
+    })
+    
+}
+
+
+// function to fill global vars
+function getSchemas() {
+
+connection.query("select * from department", function(err,res){
+    if (err) throw err;
+    deptSchema = Object.keys(res[0]);
+    deptVals = res;
+
+})
+
+connection.query("select * from roles", function(err,res){
+    if (err) throw err;
+    roleSchema = Object.keys(res[0]);
+    roleVals = res;
+
+})
+
+connection.query("select * from employees", function(err,res){
+    if (err) throw err;
+    empSchema = Object.keys(res[0]);
+    empVals = res;
+    for (let m=0; m < res.length; m++) {
+        if (res[m].is_manager) {
+            mgrVals.push(res[m]);
+        }
+    }
+    
+})
+
+}
+
+// guide user through steps for a dynamic sql query creation
+function dynamicFork() {
+    inquirer.prompt(questions2).then(answer => {
         console.log(`You want to ${answer.action} an entry in the ${answer.table} table.`);
 
         // fork in the road; where do you go robert frost
@@ -77,27 +147,28 @@ function askFork() {
     })
 }
 
+// guide user to popular pre-defined queries 
+function staticFork() {
+    inquirer.prompt(questions3).then(answer => {
+        console.log(`You want to execute ${answer.query}.`);
 
-// function to fill global vars
-function getSchemas() {
+        // fork in the road; where do you go robert frost
+        switch (answer.query) {
+            case 'View Employees by Manager':
+                groupByMgr();
+                break;
+            // case 'View Employees by Dept':
+                // groupByDept();
+                // break;
+            case 'View Dept Budgets':
+                deptBudget();
+                break;
+            default:
+                console.log('Error, choose right action.');
+                break;
+        }
 
-connection.query("select * from department", function(err,res){
-    if (err) throw err;
-    deptSchema = Object.keys(res[0]);
-
-})
-
-connection.query("select * from roles", function(err,res){
-    if (err) throw err;
-    roleSchema = Object.keys(res[0]);
-
-})
-
-connection.query("select * from employees", function(err,res){
-    if (err) throw err;
-    empSchema = Object.keys(res[0]);
-
-})
+    })
 
 }
 
@@ -136,7 +207,7 @@ function createDB(action, table) {
     connection.query("select * from employees where is_manager = true", function(err,res){
         if (err) throw err;
         for (let r=0; r < res.length; r++) {
-            mgr.push(res[r].firstname)
+            mgr.push(res[r].firstname + ' ' + res[r].lastname)
         }
 
         mq = res;
@@ -234,7 +305,7 @@ function createDB(action, table) {
             let match = rq.find(obj => obj.title === schema.role_id);
             schema.role_id = match.id;
 
-            let match2 = mq.find(obj => obj.firstname === schema.manager_id);
+            let match2 = mq.find(obj => obj.firstname.concat(' ').concat(obj.lastname) === schema.manager_id);
             schema.manager_id = match2.id;
         }
     
@@ -257,54 +328,42 @@ function createDB(action, table) {
 // Query the database based on the user's input
 function updateDB(action, table) {
     // uncomment the below to confirm args come into function, if needed
-    // console.log(empSchema);
+    // console.log(empSchema);        
+
     var tableSchema;
 
+    // async function getTable() {
+    //     connection.query(`select * from ${table}`, function(err, res) {
+    //     // if (err) throw err;
+    //         console.table(res);
 
-    async function getTable() {
-        connection.query(`select * from ${table}`, function(err, res) {
-        // if (err) throw err;
-            console.table(res);
+    //     })
 
-        })
-
-        return new Promise(resolve => {
-            setTimeout(() => {
-                resolve('resolved'),
-                2000
-            });
-        })
-    }
+    //     return new Promise(resolve => {
+    //         setTimeout(() => {
+    //             resolve('resolved'),
+    //             2000
+    //         });
+    //     })
+    // }
 
     // Get the right table
     switch (table){
         case ("department"):
-            
             console.log('\n');
-            // connection.query('select * from department', function(err, res) {
-            //     if (err) throw err;
-            //     console.table(res);
-            // })
+            console.table(deptVals);
             tableSchema = deptSchema;
             break;
         
         case ("roles"):
-            
             console.log('\n');
-            // connection.query('select * from roles', function(err, res) {
-            //     if (err) throw err;
-            //     console.table(res);
-            // })
+            console.table(roleVals);
             tableSchema = roleSchema;
             break;
 
         case ("employees"):
-            
             console.log('\n');
-            // connection.query('select * from employees', function(err, res) {
-            //     if (err) throw err;
-            //     console.table(res);
-            // })
+            console.table(empVals);
             tableSchema = empSchema;
             break;
 
@@ -329,7 +388,7 @@ function updateDB(action, table) {
 
         }]
 
-    getTable().then(
+
         inquirer.prompt(updateQs).then(schema => {
         // console.log(schema);
         // Create query
@@ -342,7 +401,7 @@ function updateDB(action, table) {
         })
 
     })
-    )
+    
 
 }
 
@@ -453,4 +512,67 @@ function deleteDB(action, table) {
     })
     )
 
+}
+
+// function to group employees by manager
+function groupByMgr() {
+    // init manager vars
+    console.log('\n');
+    console.table(mgrVals);
+
+    let manager =  
+    {
+        type: 'input',
+        message: 'Enter the ID of the manager you want to view.',
+        name: 'id'
+    };
+
+
+    inquirer.prompt(manager).then(m => {
+
+        if(m.length > 0) {
+
+            connection.query(`select * from employees where id = ${m.id}`, function(err,res){
+                console.log(`\nViewing Employees Under ${res[0].firstname} ${res[0].lastname}`);
+            })
+
+            connection.query(`select * from employees where manager_id = '${m.id}'`, function(err,res){
+                console.table(res);
+            })
+            askFork();
+        }
+        else {
+            console.log('This Manager currently has no employees under them.')
+        }
+    })
+}
+
+function deptBudget() {
+    // create a series of subqueries to structure the data as desired
+    connection.query(`
+    with depts as (
+        select id, name
+        from department
+    ),
+    
+    emps as (
+        select 
+        e.id, e.role_id, r.salary, r.department_id
+        from employees e 
+        left join roles r on r.id = e.role_id
+    ),
+
+    summ as (
+        select department_id, sum(salary) as budget
+        from emps
+        group by department_id
+    )
+
+    select d.id, d.name, s.budget from depts d left join summ s on s.department_id = d.id
+    `, 
+    function(err,res){
+        if (err) throw err;
+        console.log('\n');
+        console.table(res);
+    })
 }
