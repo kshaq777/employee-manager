@@ -66,7 +66,7 @@ function askFork() {
             case 'view':
                 viewDB(answer.action, answer.table);
                 break;
-            case '/delete':
+            case 'delete':
                 deleteDB(answer.action, answer.table);
                 break;
             default:
@@ -396,10 +396,41 @@ function viewDB(action, table) {
 function deleteDB(action, table) {
     // uncomment the below to confirm args come into function, if needed
     // console.log('test');
+    async function getTable() {
+        connection.query(`select * from ${table}`, function(err, res) {
+        // if (err) throw err;
+            console.table(res);
 
-    // Create query
-    // connection.query("FROM auctions", function(err, res) {
-    //     if (err) throw err;
-    //     console.log(res);
+        })
+
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve('resolved'),
+                2000
+            });
+        })
+    }
+
+    const delQs = 
+        {
+            type: 'input',
+            message: 'Enter the ID of the records you want to delete.',
+            name: 'id'
+        }
+
+    getTable().then(
+        inquirer.prompt(delQs).then(schema => {
+        // console.log(schema);
+        // Create query
+        connection.query(`delete from ${table} where id = '${schema.id}'`, 
+    
+        function(err, res) {
+            if (err) throw err;
+            console.log(res);
+
+        })
+
+    })
+    )
 
 }
