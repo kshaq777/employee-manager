@@ -109,8 +109,10 @@ function createDB(action, table) {
     const createQs = [];
     const dept = [];
     const role = [];
+    const mgr = [];
     var dq;
     var rq;
+    var mq;
 
     connection.query("select * from department", function(err,res){
         if (err) throw err;
@@ -129,6 +131,15 @@ function createDB(action, table) {
         }
 
         rq = res;
+    })
+
+    connection.query("select * from employees where is_manager = true", function(err,res){
+        if (err) throw err;
+        for (let r=0; r < res.length; r++) {
+            mgr.push(res[r].firstname)
+        }
+
+        mq = res;
     })
 
     switch (table){
@@ -191,6 +202,12 @@ function createDB(action, table) {
                     message: "Are they a manager?",
                     name: 'is_manager'
                 },
+                {
+                    type: 'list',
+                    message: "Who is this peron's manager?",
+                    name: 'manager_id',
+                    choices: mgr
+                }
             ]
 
             
@@ -216,6 +233,9 @@ function createDB(action, table) {
         if (table === 'employees') {
             let match = rq.find(obj => obj.title === schema.role_id);
             schema.role_id = match.id;
+
+            let match2 = mq.find(obj => obj.firstname === schema.manager_id);
+            schema.manager_id = match2.id;
         }
     
     
